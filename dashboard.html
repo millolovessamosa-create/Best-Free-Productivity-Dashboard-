@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Focus Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&family=Raleway:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Quicksand', sans-serif;
+      background: url('https://images.unsplash.com/photo-1618220903244-93a5a1e6e3a2?fit=crop&w=1600&q=80') no-repeat center center/cover;
+      color: #111;
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+      transition: background-image 0.5s ease-in-out;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 280px;
+      background: rgba(255, 255, 255, 0.85);
+      padding: 20px;
+      box-shadow: 4px 0 12px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      overflow-y: auto;
+    }
+
+    /* Main Timer Area */
+    .main {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+    }
+
+    .timer {
+      font-size: 5rem;
+      margin: 20px 0;
+      font-family: 'Raleway', sans-serif;
+    }
+
+    button {
+      background: #6c63ff;
+      border: none;
+      border-radius: 12px;
+      color: white;
+      padding: 8px 16px;
+      cursor: pointer;
+      margin: 5px;
+      font-family: 'Quicksand', sans-serif;
+    }
+
+    button:hover { background: #5146d9; }
+
+    /* Focus Friend */
+    .focus-friend {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      width: 160px;
+      height: 160px;
+    }
+
+    .focus-friend img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      border-radius: 12px;
+    }
+
+    h2 { font-family: 'Raleway', sans-serif; font-size: 1.3rem; }
+
+    ul { list-style: none; padding: 0; }
+    li {
+      background: #eee;
+      margin: 6px 0;
+      padding: 8px 12px;
+      border-radius: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+    }
+    .completed { text-decoration: line-through; opacity: 0.6; }
+    textarea { width: 100%; border-radius: 8px; padding: 6px; resize: none; }
+    select, input[type="text"], input[type="file"], input[type="range"] {
+      padding: 6px; border-radius: 8px; width: 100%;
+      margin-top: 5px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div>
+      <h2>🎨 Background</h2>
+      <select id="bgSelect" onchange="changeBackground(this.value)">
+        <option value="lofi">Lofi Room</option>
+        <option value="city">City Night</option>
+        <option value="forest">Misty Forest</option>
+        <option value="cafe">Cafe Vibes</option>
+      </select>
+      <input type="file" id="backdropInput" accept="image/*" onchange="uploadBackdrop(event)">
+    </div>
+
+    <div>
+      <h2>✅ Tasks</h2>
+      <input type="text" id="taskInput" placeholder="Add a task...">
+      <button onclick="addTask()">Add</button>
+      <ul id="taskList"></ul>
+    </div>
+
+    <div>
+      <h2>🎵 Sounds</h2>
+      <button onclick="toggleSound('rain')">Rain 🌧</button>
+      <button onclick="toggleSound('cafe')">Café ☕</button>
+      <label>Volume:
+        <input type="range" min="0" max="1" step="0.05" value="0.5" id="volumeControl" onchange="setVolume(this.value)">
+      </label>
+      <input type="file" id="soundUpload" accept="audio/*" onchange="uploadSound(event)">
+    </div>
+
+    <div>
+      <h2>🤝 Focus Feed</h2>
+      <textarea id="statusInput" placeholder="How are you feeling?"></textarea>
+      <button onclick="postStatus()">Post</button>
+      <ul id="statusFeed"></ul>
+    </div>
+
+    <div>
+      <h2>🎶 Spotify</h2>
+      <select id="spotifySelect" onchange="changeSpotify(this.value)">
+        <option value="37i9dQZF1DXcBWIGoYBM5M">Chill Vibes</option>
+        <option value="37i9dQZF1DX4WYpdgoIcn6">Focus Beats</option>
+        <option value="37i9dQZF1DX0XUsuxWHRQd">Lofi Hip Hop</option>
+      </select>
+      <input type="text" id="customPlaylistInput" placeholder="Paste your playlist URL">
+      <button onclick="loadCustomPlaylist()">Load Playlist</button>
+      <div id="spotifyEmbed">
+        <iframe 
+          src="https://open.spotify.com/embed/playlist/37i9dQZF1DXcBWIGoYBM5M" 
+          width="100%" height="152" frameborder="0" 
+          allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture">
+        </iframe>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Timer -->
+  <div class="main">
+    <h1>⏳ Focus Timer</h1>
+    <div class="timer" id="timerDisplay">25:00</div>
+    <div>
+      <button onclick="startTimer(25)">Pomodoro</button>
+      <button onclick="startTimer(5)">Break</button>
+      <button onclick="startTimer(40)">Animedoro</button>
+      <button onclick="startStopwatch()">Stopwatch</button>
+      <button onclick="resetTimer()">Reset</button>
+    </div>
+  </div>
+
+  <!-- Focus Friend -->
+  <div class="focus-friend">
+    <img src="https://media.giphy.com/media/f5nmIC4lUQgFW/giphy.gif" alt="Focus Friend">
+  </div>
+
+  <script>
+    // Backgrounds
+    const presets = {
+      lofi: "https://images.unsplash.com/photo-1618220903244-93a5a1e6e3a2?fit=crop&w=1600&q=80",
+      city: "https://images.unsplash.com/photo-1500048993959-d0b782f3bc8e?fit=crop&w=1600&q=80",
+      forest: "https://images.unsplash.com/photo-1501785888041-af3ef285b470?fit=crop&w=1600&q=80",
+      cafe: "https://images.unsplash.com/photo-1529070538774-1843cb3265df?fit=crop&w=1600&q=80"
+    };
+    function changeBackground(choice) {
+      document.body.style.backgroundImage = `url('${presets[choice]}')`;
+    }
+    function uploadBackdrop(event){
+      const file = event.target.files[0];
+      if(!file) return;
+      const url = URL.createObjectURL(file);
+      document.body.style.backgroundImage = `url(${url})`;
+    }
+
+    // Timer / Stopwatch
+    let timerInterval;
+    let timeRemaining;
+    function startTimer(minutes) {
+      clearInterval(timerInterval);
+      timeRemaining = minutes * 60;
+      updateTimer();
+      timerInterval = setInterval(() => {
+        timeRemaining--;
+        updateTimer();
+        if(timeRemaining<=0) clearInterval(timerInterval);
+      },1000);
+    }
+    function startStopwatch(){
+      clearInterval(timerInterval);
+      timeRemaining=0;
+      timerInterval=setInterval(()=>{timeRemaining++; updateTimer();},1000);
+    }
+    function resetTimer(){
+      clearInterval(timerInterval);
+      document.getElementById("timerDisplay").textContent="00:00";
+    }
+    function updateTimer(){
+      let m=Math.floor(timeRemaining/60);
+      let s=timeRemaining%60;
+      document.getElementById("timerDisplay").textContent=
+        `${m.toString().padStart(2,"0")}:${s.toString().padStart(2,"0")}`;
+    }
+
+    // Tasks
+    function addTask(){
+      let input=document.getElementById("taskInput");
+      if(input.value.trim()==="") return;
+      let li=document.createElement("li");
+      li.textContent=input.value;
+      li.onclick=()=>li.classList.toggle("completed");
+      let removeBtn=document.createElement("button");
+      removeBtn.textContent="✖";
+      removeBtn.onclick=(e)=>{e.stopPropagation(); li.remove();};
+      li.appendChild(removeBtn);
+      document.getElementById("taskList").appendChild(li);
+      input.value="";
+    }
+
+    // Feed
+    function postStatus(){
+      let input=document.getElementById("statusInput");
+      if(input.value.trim()==="") return;
+      let li=document.createElement("li");
+      li.textContent=input.value;
+      document.getElementById("statusFeed").prepend(li);
+      input.value="";
+    }
+
+    // Sounds
+    const sounds = {
+      rain: new Audio("https://cdn.pixabay.com/download/audio/2022/03/15/audio_1f37b52e55.mp3"),
+      cafe: new Audio("https://cdn.pixabay.com/download/audio/2021/11/16/audio_3bfa7d9a3f.mp3")
+    };
+    Object.values(sounds).forEach(audio=>{audio.loop=true; audio.volume=0.5;});
+    function toggleSound(name){
+      let audio=sounds[name];
+      if(audio.paused) audio.play().catch(err=>console.log("Click required:",err));
+      else audio.pause();
+    }
+    function setVolume(val){ Object.values(sounds).forEach(audio=>audio.volume=val); }
+    function uploadSound(event){
+      let file=event.target.files[0];
+      if(!file) return;
+      let url=URL.createObjectURL(file);
+      let customAudio=new Audio(url);
+      customAudio.loop=true;
+      customAudio.volume=0.5;
+      customAudio.play().catch(err=>console.log("Click required:",err));
+    }
+
+    // Spotify
+    function changeSpotify(id){
+      document.getElementById("spotifyEmbed").innerHTML=
+        `<iframe src="https://open.spotify.com/embed/playlist/${id}" width="100%" height="152" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>`;
+    }
+    function loadCustomPlaylist(){
+      const input=document.getElementById("customPlaylistInput").value.trim();
+      if(!input) return;
+      const match=input.match(/playlist\/([a-zA-Z0-9]+)(\?|$)/);
+      if(!match){ alert("Invalid playlist URL!"); return; }
+      const playlistId=match[1];
+      changeSpotify(playlistId);
+    }
+  </script>
+</body>
+</html>
